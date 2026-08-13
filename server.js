@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Serve Static Frontend Files (HTML, CSS, JS, Images, Video)
+// Serve Static Frontend Files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
 // API Endpoint: Health Check
@@ -70,7 +71,7 @@ app.get('/api/playlist', (req, res) => {
 
 // Fallback route for index.html (when running full Node server locally)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Node.js Express Server with Automatic Port Fallback

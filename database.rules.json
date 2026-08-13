@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "active_listeners": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

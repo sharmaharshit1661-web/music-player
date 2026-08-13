@@ -1,5 +1,7 @@
 /* ===== Truck Wala — 3D Coverflow Music Player ===== */
 
+const CURRENT_USER_ID = '50ceac183cac4b6ca62002c7dc6874f3';
+
 // ===== Song Data =====
 const songs = [
     {
@@ -462,9 +464,10 @@ if (typeof firebase !== 'undefined') {
     if (firebase.firestore) {
       try {
         const firestore = firebase.firestore();
-        const sessionRef = firestore.collection("active_sessions").doc();
+        const sessionRef = firestore.collection("active_sessions").doc(CURRENT_USER_ID);
         
         sessionRef.set({
+          userId: CURRENT_USER_ID,
           online: true,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(()=>{});
@@ -493,9 +496,12 @@ if (typeof firebase !== 'undefined') {
 
         connectedRef.on("value", (snap) => {
           if (snap.val() === true) {
-            const myRef = presenceRef.push();
+            const myRef = presenceRef.child(CURRENT_USER_ID);
             myRef.onDisconnect().remove();
-            myRef.set(true);
+            myRef.set({
+              userId: CURRENT_USER_ID,
+              online: true
+            });
           }
         });
 

@@ -18,6 +18,7 @@ app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
         app: 'म्यूजिक प्लेयर — Music Player',
+        userId: '50ceac183cac4b6ca62002c7dc6874f3',
         version: '1.0.0',
         timestamp: new Date().toISOString()
     });

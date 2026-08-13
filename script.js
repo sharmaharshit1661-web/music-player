@@ -110,100 +110,22 @@ const miniProgress = document.getElementById('miniProgress');
 const miniProgressBar = document.getElementById('miniProgressBar');
 const miniTime = document.getElementById('miniTime');
 
-// ===== Spotify Web API Integration =====
-const token = 'BQAfTMGFbQgb7Nq03JEUg4NIToiNoNKDvaLhs-JkNd6Y2AIfE2ZrptWQJmSdSdIOKxqhFu4Wtl7aRYBUP_pUxqNHKW9SPsEfMWtZugEVtU1_w_fc80OD2oIiQDqDt92tZjLNYDTgxgN3cZN7Sf19o1RBQft2iC1yMJHZjW2yDYVZ7A2885OYc9-EZ9M_MquJGMRUC8WnSaERUvoCp5srBRYHGY56EixT45KRHK_yvHU1LdMC7okqN1MSH1KyezdiXc067slL5Whx_LK9Ce0KhPLFYmsvHRb4bsO_HOh5I5xvspt0BUpyU1sLimJsZdYiiD1d-sxRQ5U';
-
-const tracksUri = [
-  'spotify:track:2ydbueJ96gosjR7SZaLTlm',
-  'spotify:track:2aGVcyuMXfjKZcSbn1LK2N',
-  'spotify:track:0kzxkJMY4v37c1ZeDa6tTK',
-  'spotify:track:18dts4OqWOQTGFlMTGodkk',
-  'spotify:track:6H7fLdt0AeWpuxUKXuXWrx'
-];
-
-async function fetchWebApi(endpoint, method, body) {
-  const res = await fetch(`https://api.spotify.com/${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    method,
-    body: body ? JSON.stringify(body) : undefined
-  });
-  return await res.json();
-}
-
-async function getSpotifyTracksByUri() {
-  const trackIds = tracksUri.map(uri => uri.split(':').pop()).join(',');
-  const data = await fetchWebApi(`v1/tracks?ids=${trackIds}`, 'GET');
-  return data ? data.tracks : null;
-}
-
-async function createPlaylist(tracksUri) {
-  try {
-    const playlist = await fetchWebApi('v1/me/playlists', 'POST', {
-      "name": "My top tracks playlist",
-      "description": "Playlist created by Highway Music Player",
-      "public": false
-    });
-    if (playlist && playlist.id) {
-      await fetchWebApi(`v1/playlists/${playlist.id}/items?uris=${tracksUri.join(',')}`, 'POST');
-      console.log('Successfully created Spotify playlist:', playlist.name, playlist.id);
-      return playlist;
-    }
-  } catch(e) {
-    console.log('Playlist creation notice:', e.message);
-  }
-}
-
-async function loadSpotifyData() {
-  try {
-    // 1. Fetch exact track details for the 5 Spotify URIs
-    let fetchedTracks = await getSpotifyTracksByUri();
-    
-    // Fallback to top tracks if specific tracks endpoint fails
-    if (!fetchedTracks || fetchedTracks.length === 0 || !fetchedTracks[0]) {
-      const topData = await fetchWebApi('v1/me/top/tracks?time_range=long_term&limit=5', 'GET');
-      fetchedTracks = topData ? topData.items : null;
-    }
-
-    if (fetchedTracks && fetchedTracks.length > 0 && fetchedTracks[0]) {
-      songs.length = 0;
-      fetchedTracks.forEach((track) => {
-        if (!track) return;
-        const sec = Math.floor(track.duration_ms / 1000);
-        songs.push({
-          title: track.name,
-          artist: track.artists ? track.artists.map(a => a.name).join(', ') : 'Unknown Artist',
-          film: track.album ? track.album.name : 'Spotify Single',
-          duration: formatTime(sec),
-          durationSec: sec,
-          art: (track.album && track.album.images && track.album.images[0]) ? track.album.images[0].url : 'assets/album2.png'
-        });
-      });
-      console.log('Successfully loaded Spotify tracks into player:', songs);
-      buildCarousel();
-      updateMiniPlayer();
-
-      // Create playlist in background
-      createPlaylist(tracksUri);
-    }
-  } catch (err) {
-    console.log('Spotify API Notice (using fallback playlist):', err.message);
-  }
-}
-
+// ===== Server Playlist Integration =====
 async function fetchServerPlaylist() {
     try {
         const res = await fetch('/api/playlist');
         if (res.ok) {
             const data = await res.json();
-            if (data && data.length > 0 && songs.length === 0) {
+            if (data && data.length > 0) {
+                songs.length = 0;
                 songs.push(...data);
                 buildCarousel();
                 updateMiniPlayer();
             }
         }
-    } catch(e) {}
+    } catch(e) {
+        console.log('Playlist notice (using local tracks):', e.message);
+    }
 }
 
 // ===== Init =====
@@ -212,7 +134,6 @@ function init() {
     updateMiniPlayer();
     attachEvents();
     fetchServerPlaylist();
-    loadSpotifyData();
 }
 
 // ===== Build Carousel Cards =====
@@ -466,7 +387,12 @@ const closeSpotifyEmbed = document.getElementById('closeSpotifyEmbed');
 
 function toggleSpotifyEmbed() {
     if (spotifyEmbedModal) {
-        spotifyEmbedModal.classList.toggle('is-active');
+        const isActive = spotifyEmbedModal.classList.toggle('is-active');
+        const iframe = document.getElementById('spotifyIframe');
+        if (isActive && iframe && !iframe.getAttribute('src')) {
+            const dataSrc = iframe.getAttribute('data-src');
+            if (dataSrc) iframe.setAttribute('src', dataSrc);
+        }
     }
 }
 

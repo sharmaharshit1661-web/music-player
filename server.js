@@ -68,8 +68,8 @@ app.get('/api/playlist', (req, res) => {
     ]);
 });
 
-// Serve index.html for all SPA routes
-app.get('*', (req, res) => {
+// Fallback route for index.html (when running full Node server locally)
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -93,4 +93,9 @@ function startServer(port) {
     });
 }
 
-startServer(PORT);
+// Export for Vercel serverless deployment
+module.exports = app;
+
+if (require.main === module) {
+    startServer(PORT);
+}
